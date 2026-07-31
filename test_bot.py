@@ -72,8 +72,28 @@ class TestDhanStrangleBacktester(unittest.TestCase):
         Test the backtester's ability to run on historical data and produce correct metrics.
         """
         backtester = DhanOptionsStrangleBacktester(lot_size=65, quantity_lots=2)
-        dummy_data = backtester.generate_dummy_historical_data("2026-07-01", "2026-07-10")
 
+        # Create a self-contained mock dataframe of option chains to prevent network requests during unit tests
+        records = []
+        for strike in [23600, 23800, 24000, 24200, 24400]:
+            records.append({
+                "date": "2024-01-03", "time": "09:45", "underlying_price": 24000.0, "strike": strike, "option_type": "CE",
+                "premium": 150.0 - (strike - 24000) * 0.5, "delta": max(0.01, 0.5 - (strike - 24000) / 1000.0)
+            })
+            records.append({
+                "date": "2024-01-03", "time": "09:45", "underlying_price": 24000.0, "strike": strike, "option_type": "PE",
+                "premium": 150.0 + (strike - 24000) * 0.5, "delta": min(-0.01, -0.5 + (strike - 24000) / 1000.0)
+            })
+            records.append({
+                "date": "2024-01-03", "time": "14:00", "underlying_price": 24000.0, "strike": strike, "option_type": "CE",
+                "premium": 150.0 - (strike - 24000) * 0.5, "delta": max(0.01, 0.5 - (strike - 24000) / 1000.0)
+            })
+            records.append({
+                "date": "2024-01-03", "time": "14:00", "underlying_price": 24000.0, "strike": strike, "option_type": "PE",
+                "premium": 150.0 + (strike - 24000) * 0.5, "delta": min(-0.01, -0.5 + (strike - 24000) / 1000.0)
+            })
+
+        dummy_data = pd.DataFrame(records)
         results = backtester.run_backtest(dummy_data)
 
         self.assertNotIn("error", results)
